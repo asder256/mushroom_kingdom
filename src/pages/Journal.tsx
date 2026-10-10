@@ -1,0 +1,33 @@
+import { useMemo, useState } from 'react';
+import type { Spot } from '../models/types';
+import { emptyFilters, filterSpots, speciesNames } from '../models/filter';
+import { JournalMap } from '../map/JournalMap';
+import { Field, TextField } from '../components/Fields';
+export function Journal({ spots, local, ready, onSelect, onAdd, onCopy }: { spots: Spot[]; local: boolean; ready: boolean; onSelect: (id: string) => void; onAdd: (lat?: number, lng?: number) => void; onCopy: () => void }) {
+  const [filters, setFilters] = useState(emptyFilters); const [view, setView] = useState<'map' | 'list'>('map'); const [picking, setPicking] = useState(false);
+  const [focusTarget, setFocusTarget] = useState<{ id: string; request: number } | null>(null);
+  const filtered = useMemo(() => filterSpots(spots, filters), [spots, filters]);
+  const species = [...new Set(spots.flatMap(speciesNames))].sort(); const tags = [...new Set(spots.flatMap(s => s.tags))].sort();
+  const groups = [...new Set(spots.map(s => s.group).filter(Boolean))].sort();
+  function focusSpot(id: string) {
+    setView('map'); setPicking(false);
+    setFocusTarget(previous => ({ id, request: (previous?.request ?? 0) + 1 }));
+  }
+  return <section className="journal-page"><div className="journal-heading"><div><p className="eyebrow">A PERSONAL FIELD JOURNAL</p><h1>{local ? 'Your next chapter.' : 'Good places. Quiet moments.'}</h1><p>{local ? 'A living collection, saved in this browser.' : 'Woodland discoveries and days by the water.'}</p></div><span className="edition">{local ? 'LOCAL EDITION' : 'PUBLIC EDITION'}<br /><strong>{spots.length.toString().padStart(2, '0')}</strong> places</span></div>
+    {local && <div className="notice compact">Saved on this device only. <a href="#data">Export a backup</a> to keep a safe copy. Local edits do not publish automatically.</div>}
+    {!local && spots.some(s => s.tags.includes('fictional-demo')) && <p className="demo-note">Fictional sample journal · These markers are invented examples, not real recommendations.</p>}
+    <div className="journal-toolbar"><div className="segmented" aria-label="View"><button className={view === 'map' ? 'active' : ''} aria-pressed={view === 'map'} onClick={() => setView('map')}>Map</button><button className={view === 'list' ? 'active' : ''} aria-pressed={view === 'list'} onClick={() => setView('list')}>List</button></div><span className="muted" role="status">{filtered.length} places</span>{local && <div className="actions"><button disabled={!ready} onClick={() => { setView('map'); setPicking(!picking); }}>{picking ? 'Cancel map selection' : '+ Add on map'}</button><button disabled={!ready} className="secondary" onClick={() => onAdd()}>Enter coordinates</button></div>}</div>
+    <details className="filters" open><summary>Search & filters</summary><div className="filter-grid"><TextField label="Search places" value={filters.search} onChange={search => setFilters({ ...filters, search })} />
+      <Field label="Category">{id => <select id={id} value={filters.category} onChange={e => setFilters({ ...filters, category: e.target.value })}><option value="">All categories</option>{[...new Set(['mushroom', 'fishing', ...spots.map(s => s.category)])].map(c => <option key={c}>{c}</option>)}</select>}</Field>
+      <Field label="Species">{id => <select id={id} value={filters.species} onChange={e => setFilters({ ...filters, species: e.target.value })}><option value="">All species</option>{species.map(s => <option key={s}>{s}</option>)}</select>}</Field>
+      <Field label="Tag">{id => <select id={id} value={filters.tag} onChange={e => setFilters({ ...filters, tag: e.target.value })}><option value="">All tags</option>{tags.map(t => <option key={t}>{t}</option>)}</select>}</Field>
+      <Field label="Spot group">{id => <select id={id} value={filters.group} onChange={e => setFilters({ ...filters, group: e.target.value })}><option value="">All groups</option>{groups.map(g => <option key={g}>{g}</option>)}</select>}</Field>
+      <TextField label="Visited from" type="date" value={filters.from} onChange={from => setFilters({ ...filters, from })} /><TextField label="Visited to" type="date" value={filters.to} onChange={to => setFilters({ ...filters, to })} /></div><button className="text-button" onClick={() => setFilters(emptyFilters)}>Clear filters</button>{filters.from && filters.to && filters.from > filters.to && <p role="alert">The start date is after the end date.</p>}</details>
+    <div className={`explorer ${view === 'list' ? 'list-only' : ''}`}>
+      {view === 'map' && <JournalMap spots={filtered} onSelect={onSelect} focusTarget={focusTarget} picking={picking} onPick={(lat, lng) => { setPicking(false); onAdd(lat, lng); }} />}
+      <div className="spot-list" aria-label="Places"><div className="list-title"><h2>Field notes</h2><span>WOODLAND & WATER</span></div>{!filtered.length && <div className="empty"><h3>{spots.length ? 'No places match just yet.' : 'Every journal starts somewhere.'}</h3><p>{spots.length ? 'Try a different filter or clear your search.' : local ? 'Add a place on the map, or bring in your Google Maps list.' : 'No public spots have been published.'}</p>{local && !spots.length && <><a href="#guide">Import your Google Maps list →</a><button className="secondary" disabled={!ready} onClick={onCopy}>Copy public spots into local journal</button></>}</div>}
+        {filtered.map((s, i) => <div className={`spot-card-row ${local && focusTarget?.id === s.id ? 'focused' : ''}`} key={s.id}><button className="spot-card" onClick={() => local ? focusSpot(s.id) : onSelect(s.id)} aria-label={local ? `Show ${s.name} on map` : `Read ${s.name}`}><span className={`category-symbol ${s.category === 'fishing' ? 'water' : 'forest'}`} aria-hidden="true">{s.category === 'fishing' ? '≈' : '♠'}</span><span className="card-content"><span className="card-category">{s.category} {s.group && `· ${s.group}`} {local && s.favorite ? '· ★' : ''}</span><strong>{s.name}</strong><span className="card-description">{s.description || 'A story waiting to be told.'}</span><span className="card-meta">{s.visits.length} visits · {[...new Set(speciesNames(s))].slice(0, 2).join(', ') || 'No species recorded'}</span></span><span className="card-number">{String(i + 1).padStart(2, '0')} ↗</span></button>{local && <button className="text-button open-notes" onClick={() => onSelect(s.id)} aria-label={`Open notes for ${s.name}`}>Open notes →</button>}</div>)}
+      </div>
+    </div><div className="journal-foot"><span>♠ Mushroom spots</span><span>≈ Fishing spots</span><span>Leave only footprints.</span></div>
+  </section>;
+}

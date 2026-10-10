@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.npm-cache/
+.tooling/
+private-backups/
+playwright-report/
+test-results/
+coverage/
+.env*
+!.env.example
+*.local
+# Owner-provided import examples. Never bundle or commit raw location exports.
+sample-data/Svamp.csv
+sample-data/Kul svampar.csv
