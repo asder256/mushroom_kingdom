@@ -1,7 +1,15 @@
 import { test, expect } from '@playwright/test';
+import { newSpot } from '../../src/models/types';
+import { publicExport } from '../../src/import-export/datasets';
+const visitorDataset = publicExport([
+  { ...newSpot(59.4, 15.2), id: 'fictional-woodland', name: 'Fictional woodland', publish: true, tags: ['fictional-demo'] },
+  { ...newSpot(59.5, 15.3), id: 'fictional-reedwater', name: 'Reedwater bend', category: 'fishing', publish: true, tags: ['fictional-demo'] },
+]);
 test.beforeEach(async ({ page }) => {
   // Tests never contact public tile servers or external services.
   await page.route('https://**', route => route.abort());
+  // Keep browser checks independent of the owner's changing published spots.
+  await page.route('**/data/spots.json', route => route.fulfill({ json: visitorDataset }));
 });
 test('visitor filters and mobile layout', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });

@@ -16,6 +16,8 @@ Vite's base is `/mushroom_kingdom/`. Data/config requests use the same base. Has
 
 ## Publish a dataset
 
+The public dataset check validates the published schema and backup compatibility. Your exported spots do not need the starter data's `fictional-demo` tag. Browser checks use separate fictional records, so publishing a different collection does not change their expected locations. The check and deployment workflows use Node.js 24 with Node.js 24 versions of checkout and setup-node.
+
 1. Export a full private backup and store it safely.
 2. Review the public export preview in the app; download `spots.json`.
 3. On a publishing branch, replace `public/data/spots.json`. Inspect the entire diff, including URLs, descriptions and coordinates.
