@@ -1,9 +1,10 @@
 import { expect, it } from 'vitest';
-import sample from '../../public/data/spots.json';
+import published from '../../public/data/spots.json';
 import { publicSchema, fromPublic } from '../../src/validation/schema';
 import { backup } from '../../src/import-export/datasets';
-it('ships a valid public dataset with fictional-only sample tags and restorable copies', () => {
-  const data = publicSchema.parse(sample);
-  expect(data.spots.every(s => s.tags.includes('fictional-demo'))).toBe(true);
+it('ships a valid public dataset with restorable copies', () => {
+  // Published owner data does not need the starter dataset's fictional-demo tag.
+  // The strict public schema still rejects private fields and invalid records.
+  const data = publicSchema.parse(published);
   expect(() => backup(data.spots.map(fromPublic))).not.toThrow();
 });
